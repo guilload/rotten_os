@@ -67,7 +67,7 @@ impl Cursor {
         self.y += 1;
     }
 
-    pub fn position(&self) -> u16 {
+    pub fn offset(&self) -> u16 {
         self.y * self.width + self.x
     }
 
@@ -84,13 +84,13 @@ impl Cursor {
     }
 
     pub fn mov(&mut self) {
-        let position = self.position() as u8;
+        let offset = self.offset() as u8;
 
         unsafe {
             self.outb(0x3D4, 14);  // tell the VGA board we are setting the high cursor byte
-            self.outb(0x3D5, position >> 8); // send the high cursor byte
+            self.outb(0x3D5, offset >> 8); // send the high cursor byte
             self.outb(0x3D4, 15);  // tell the VGA board we are setting the low cursor byte
-            self.outb(0x3D5, position);
+            self.outb(0x3D5, offset);
         }
     }
 
@@ -121,11 +121,11 @@ impl VGA {
         }
     }
 
-    pub fn put(&mut self, position: u16, background: u16, foreground: u16, character: u8) {
+    pub fn put(&mut self, offset: u16, background: u16, foreground: u16, character: u8) {
         let pixel: u16 = (background << 12) | (foreground << 8) | character as u16;
 
         unsafe {
-                *((VGA_ADDRESS + position as int * 2) as *mut u16) = pixel;
+                *((VGA_ADDRESS + offset as int * 2) as *mut u16) = pixel;
             }
     }
 
@@ -148,8 +148,8 @@ impl VGA {
         }
 
         else if character >= WHITESPACE {
-            let position = self.cursor.position();
-            self.put(position, Black as u16, White as u16, character);
+            let offset = self.cursor.offset();
+            self.put(offset, Black as u16, White as u16, character);
             self.cursor.forward();
         }
 
