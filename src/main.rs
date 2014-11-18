@@ -7,6 +7,7 @@
 
 extern crate core;
 
+mod gdt;
 mod vga;
 
 
@@ -17,11 +18,9 @@ mod vga;
 #[no_mangle]
 #[no_stack_check]
 pub extern fn kmain() {
+    gdt::init();
+
     let mut vga = vga::VGA::new();
     vga.clear();
     vga.puts("Hello, world!");
-
-    loop {
-
-    }
 }
