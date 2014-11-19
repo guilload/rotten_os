@@ -21,7 +21,7 @@ OBJECTS = $(ASMOBJECTS) $(BUILDDIR)/rottenOS.o
 .PHONY: clean run
 
 
-all: clean $(BUILDDIR) $(BUILDDIR)/rottenOS.bin run
+all: clean $(BUILDDIR) $(BUILDDIR)/rottenOS.bin
 
 $(BUILDDIR):
 	mkdir -p $(BUILDDIR)
@@ -35,8 +35,11 @@ $(BUILDDIR)/rottenOS.o: src/main.rs
 $(BUILDDIR)/rottenOS.bin: src/linker.ld $(OBJECTS)
 	$(LD) -m elf_i386 -o $@ -T $^
 
-run: $(BUILDDIR)/rottenOS.bin
-	$(QEMU) -kernel $<
-
 clean:
 	rm -rf $(BUILDDIR)
+
+debug: $(BUILDDIR)/rottenOS.bin
+	$(QEMU) -s -S -kernel $<
+
+run: $(BUILDDIR)/rottenOS.bin
+	$(QEMU) -kernel $<

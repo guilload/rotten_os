@@ -57,6 +57,10 @@ _start:
     ; our stack (as it grows downwards).
     mov esp, stack_top
 
+    ; Rust functions compare esp against [gs:0x30] as a sort of stack guard thing
+    ; as long as we set [gs:0x30] to dword 0, it should be ok
+    mov [gs:0x30], dword stack_bottom
+
     ; We are now ready to actually execute C code. We cannot embed that in an
     ; assembly file, so we'll create a kernel.c file in a moment. In that file,
     ; we'll create a C entry point called kmain and call it here.
