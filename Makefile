@@ -35,8 +35,12 @@ $(BUILDDIR)/rottenOS.o: src/main.rs
 $(BUILDDIR)/rottenOS.bin: src/linker.ld $(OBJECTS)
 	$(LD) -m elf_i386 -o $@ -T $^
 
-run: $(BUILDDIR)/rottenOS.bin
-	$(QEMU) -kernel $<
 
 clean:
 	rm -rf $(BUILDDIR)
+
+debug: $(BUILDDIR)/rottenOS.bin
+	$(QEMU) -s -S -kernel $<
+
+run: $(BUILDDIR)/rottenOS.bin
+	$(QEMU) -kernel $<

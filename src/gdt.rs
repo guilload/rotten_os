@@ -19,7 +19,7 @@ struct GDTEntry {
 
 impl GDTEntry {
 
-    fn new(base: uint, limit: uint, access: u8, granularity: u8) -> GDTEntry {
+    pub fn new(base: u32, limit: uint, access: u8, granularity: u8) -> GDTEntry {
         GDTEntry {
             limit_low: (limit & 0xFFFF) as u16,
             base_low: (base & 0xFFFF) as u16,
