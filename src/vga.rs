@@ -1,5 +1,7 @@
 use core::str::StrPrelude;
 
+use io;
+
 
 const BACKSPACE: u8 = 0x08;
 const TAB: u8 = 0x09;
@@ -86,16 +88,10 @@ impl Cursor {
     pub fn mov(&mut self) {
         let offset = self.offset() as u8;
 
-        unsafe {
-            self.outb(0x3D4, 14);  // tell the VGA board we are setting the high cursor byte
-            self.outb(0x3D5, offset >> 8); // send the high cursor byte
-            self.outb(0x3D4, 15);  // tell the VGA board we are setting the low cursor byte
-            self.outb(0x3D5, offset);
-        }
-    }
-
-    unsafe fn outb(&mut self, port: u16, value: u8) {
-        asm!("outb %al, %dx" :: "{dx}" (port), "{al}" (value) :: "volatile" );
+        io::port::write(0x3D4, 14);  // tell the VGA board we are setting the high cursor byte
+        io::port::write(0x3D5, offset >> 8); // send the high cursor byte
+        io::port::write(0x3D4, 15);  // tell the VGA board we are setting the low cursor byte
+        io::port::write(0x3D5, offset);
     }
 }
 
