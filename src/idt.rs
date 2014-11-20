@@ -1,14 +1,43 @@
 use core::mem::size_of;
 use core::prelude::*;
 
+use io;
+use vga;
+
+
+extern {
+    fn idt_load(pointer: *const IDT);
+    static isr_handlers: [u32, ..IDT_SIZE];
+}
+
 
 const IDT_SIZE: uint = 256;
 
-type IDTTable = [IDTEntry, ..IDT_SIZE];
+const IDT_ALWAYS14: u8 = 14;
+const IDT_PRESENT: u8 = 1 << 7;
+const IDT_: u8 = IDT_PRESENT | IDT_ALWAYS14;
+
+const INTERRUPT_GATE: u8 = 0xE;
+
+type IDTTable = [IDTDescriptor, ..IDT_SIZE];
+type ISRHandler = fn(registers: &mut Registers)
+
+
+static mut ISR_HANDLERS: [ISRHandler, ..IDT_SIZE] = [default_handler, ..IDT_SIZE];
+
+static mut IDT_TABLE: IDTTable = [
+    IDTDescriptor {
+        base_lo: 0,
+        sel: 0,
+        always0: 0,
+        flags: 0,
+        base_hi: 0,
+    }, ..IDT_SIZE
+];
 
 
 #[repr(packed)]
-struct IDTEntry {
+struct IDTDescriptor {
     base_lo: u16,  // the lower 16 bits of the address to jump to when this interrupt fires
     sel: u16,  // kernel segment selector
     always0: u8,  // this must always be zero
@@ -16,10 +45,10 @@ struct IDTEntry {
     base_hi: u16,  // the upper 16 bits of the address to jump to
 }
 
-impl IDTEntry {
+impl IDTDescriptor {
 
-    pub fn new(base: u32, sel: u16, flags: u8) -> IDTEntry {
-        IDTEntry {
+    pub fn new(base: u32, sel: u16, flags: u8) -> IDTDescriptor {
+        IDTDescriptor {
             base_lo: (base & 0xFFFF) as u16,
             base_hi: (base >> 16 & 0xFFFF) as u16,
             sel: sel,
@@ -27,11 +56,8 @@ impl IDTEntry {
             flags: flags,
         }
     }
-
-    pub fn privileged(base: u32) -> IDTEntry {
-        IDTEntry::new(base, 0x08, 0x8E)
-    }
 }
+
 
 #[repr(packed)]
 struct IDT {
@@ -44,135 +70,85 @@ impl IDT {
     pub fn new() -> IDT {
 
         unsafe {
-            TABLE[0] = IDTEntry::privileged(isr0 as u32);
-            TABLE[1] = IDTEntry::privileged(isr1 as u32);
-            TABLE[2] = IDTEntry::privileged(isr2 as u32);
-            TABLE[3] = IDTEntry::privileged(isr3 as u32);
-            TABLE[4] = IDTEntry::privileged(isr4 as u32);
-            TABLE[5] = IDTEntry::privileged(isr5 as u32);
-            TABLE[6] = IDTEntry::privileged(isr6 as u32);
-            TABLE[7] = IDTEntry::privileged(isr7 as u32);
-            TABLE[8] = IDTEntry::privileged(isr8 as u32);
-            TABLE[9] = IDTEntry::privileged(isr9 as u32);
-            TABLE[10] = IDTEntry::privileged(isr10 as u32);
-            TABLE[11] = IDTEntry::privileged(isr11 as u32);
-            TABLE[12] = IDTEntry::privileged(isr12 as u32);
-            TABLE[13] = IDTEntry::privileged(isr13 as u32);
-            TABLE[14] = IDTEntry::privileged(isr14 as u32);
-            TABLE[15] = IDTEntry::privileged(isr15 as u32);
-            TABLE[16] = IDTEntry::privileged(isr16 as u32);
-            TABLE[17] = IDTEntry::privileged(isr17 as u32);
-            TABLE[18] = IDTEntry::privileged(isr18 as u32);
-            TABLE[19] = IDTEntry::privileged(isr19 as u32);
-            TABLE[20] = IDTEntry::privileged(isr20 as u32);
-            TABLE[21] = IDTEntry::privileged(isr21 as u32);
-            TABLE[22] = IDTEntry::privileged(isr22 as u32);
-            TABLE[23] = IDTEntry::privileged(isr23 as u32);
-            TABLE[24] = IDTEntry::privileged(isr24 as u32);
-            TABLE[25] = IDTEntry::privileged(isr25 as u32);
-            TABLE[26] = IDTEntry::privileged(isr26 as u32);
-            TABLE[27] = IDTEntry::privileged(isr27 as u32);
-            TABLE[28] = IDTEntry::privileged(isr28 as u32);
-            TABLE[29] = IDTEntry::privileged(isr29 as u32);
-            TABLE[30] = IDTEntry::privileged(isr30 as u32);
-            TABLE[31] = IDTEntry::privileged(isr31 as u32);
 
-            TABLE[32] = IDTEntry::privileged(irq0 as u32);
-            TABLE[33] = IDTEntry::privileged(irq1 as u32);
-            TABLE[34] = IDTEntry::privileged(irq2 as u32);
-            TABLE[35] = IDTEntry::privileged(irq3 as u32);
-            TABLE[36] = IDTEntry::privileged(irq4 as u32);
-            TABLE[37] = IDTEntry::privileged(irq5 as u32);
-            TABLE[38] = IDTEntry::privileged(irq6 as u32);
-            TABLE[39] = IDTEntry::privileged(irq7 as u32);
-            TABLE[40] = IDTEntry::privileged(irq8 as u32);
-            TABLE[41] = IDTEntry::privileged(irq9 as u32);
-            TABLE[42] = IDTEntry::privileged(irq10 as u32);
-            TABLE[43] = IDTEntry::privileged(irq11 as u32);
-            TABLE[44] = IDTEntry::privileged(irq12 as u32);
-            TABLE[45] = IDTEntry::privileged(irq13 as u32);
-            TABLE[46] = IDTEntry::privileged(irq14 as u32);
-            TABLE[47] = IDTEntry::privileged(irq15 as u32);
+            for i in range(0, isr_handlers.len()) {
+                IDT_TABLE[i] = IDTDescriptor::new(isr_handlers[i], 0x08, 0x8E);
+            }
 
             IDT {
-                limit: (size_of::<IDTEntry>() * TABLE.len() - 1) as u16,
-                base: &TABLE as *const IDTTable,
+                limit: (size_of::<IDTDescriptor>() * IDT_TABLE.len() - 1) as u16,
+                base: &IDT_TABLE as *const IDTTable,
             }
         }
     }
 
     pub fn load(&self) {
         unsafe {
-            idtload(self as *const IDT);
+            idt_load(self as *const IDT);
+        }
+    }
+
+    pub fn remap_irq(&mut self) {  // Remap the irq table.
+        unsafe {
+            io::port::write(0x20, 0x11);
+            io::port::write(0xA0, 0x11);
+            io::port::write(0x21, 0x20);
+            io::port::write(0xA1, 0x28);
+            io::port::write(0x21, 0x04);
+            io::port::write(0xA1, 0x02);
+            io::port::write(0x21, 0x01);
+            io::port::write(0xA1, 0x01);
+            io::port::write(0x21, 0x0);
+            io::port::write(0xA1, 0x0);
         }
     }
 }
 
 
-static mut TABLE: IDTTable = [
-    IDTEntry {
-        base_lo: 0,
-        sel: 0,
-        always0: 0,
-        flags: 0,
-        base_hi: 0,
-    }, ..IDT_SIZE
-];
-
 pub fn init() {
-    IDT::new().load();
+    let mut idt = IDT::new();
+    idt.load();
+    idt.remap_irq();
 }
 
-extern {
-    fn idtload(pointer: *const IDT);
+fn register_handler(no: uint, func: fn(regs: &mut Registers)) {
+    unsafe {
+        IDT_TABLE[no] = IDTDescriptor::new(isr_handlers[no], //FIXME);
+        ISR_HANDLERS[no] = func;
+    }
+}
 
-    fn isr0();
-    fn isr1();
-    fn isr2();
-    fn isr3();
-    fn isr4();
-    fn isr5();
-    fn isr6();
-    fn isr7();
-    fn isr8();
-    fn isr9();
-    fn isr10();
-    fn isr11();
-    fn isr12();
-    fn isr13();
-    fn isr14();
-    fn isr15();
-    fn isr16();
-    fn isr17();
-    fn isr18();
-    fn isr19();
-    fn isr20();
-    fn isr21();
-    fn isr22();
-    fn isr23();
-    fn isr24();
-    fn isr25();
-    fn isr26();
-    fn isr27();
-    fn isr28();
-    fn isr29();
-    fn isr30();
-    fn isr31();
 
-    fn irq0();
-    fn irq1();
-    fn irq2();
-    fn irq3();
-    fn irq4();
-    fn irq5();
-    fn irq6();
-    fn irq7();
-    fn irq8();
-    fn irq9();
-    fn irq10();
-    fn irq11();
-    fn irq12();
-    fn irq13();
-    fn irq14();
-    fn irq15();
+fn default_handler(registers: &mut Registers) {
+    let mut vga = vga::VGA::new();
+    vga.clear();
+    vga.puts("Unhandled interrupt!");
+}
+
+
+pub fn register_interrupt(number: uint, func: fn(regs: &mut Registers)) {
+    register_handler(number, func);
+}
+
+#[repr(C)]
+pub struct Registers {
+    edi: u32,
+    esi: u32,
+    ebp: u32,
+    esp: u32,
+    ebx: u32,
+    edx: u32,
+    ecx: u32,
+    eax: u32,
+    gs: u32,
+    fs: u32,
+    es: u32,
+    ds: u32,
+    interrupt: u32,
+    error: u32,
+    eip: u32,
+    cs: u32,
+    eflags: u32,
+    useresp: u32,
+    ss: u32
 }

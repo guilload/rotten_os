@@ -1,8 +1,8 @@
 ; From jamesmolloy.co.uk
 
-global gdtload
+global gdt_load
 
-gdtload:
+gdt_load:
     mov eax, [esp+4]  ; get the pointer to the GDT, passed as a parameter
     lgdt [eax]        ; load the new GDT pointer
 
@@ -13,5 +13,6 @@ gdtload:
     mov gs, ax
     mov ss, ax
     jmp 0x08:.load   ; 0x08 is the offset to our code segment: Far jump!
+
 .load:
     ret
