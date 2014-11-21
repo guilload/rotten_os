@@ -87,26 +87,11 @@ impl IDT {
             idt_load(self as *const IDT);
         }
     }
-
-    pub fn remap_irq(&mut self) {  // Remap the irq table.
-            io::port::write(0x20, 0x11);
-            io::port::write(0xA0, 0x11);
-            io::port::write(0x21, 0x20);
-            io::port::write(0xA1, 0x28);
-            io::port::write(0x21, 0x04);
-            io::port::write(0xA1, 0x02);
-            io::port::write(0x21, 0x01);
-            io::port::write(0xA1, 0x01);
-            io::port::write(0x21, 0x0);
-            io::port::write(0xA1, 0x0);
-    }
 }
 
 
 pub fn init() {
-    let mut idt = IDT::new();
-    idt.load();
-    idt.remap_irq();
+    IDT::new().load();
 }
 
 fn register_handler(no: uint, func: ISRHandler) {

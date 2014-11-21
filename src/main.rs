@@ -10,6 +10,7 @@ extern crate core;
 mod gdt;
 mod idt;
 mod io;
+mod pic;
 mod vga;
 
 
@@ -20,6 +21,7 @@ mod vga;
 #[no_mangle]
 pub extern fn kmain() {
     gdt::init();
+    pic::init();
     idt::init();
 
     let mut vga = vga::VGA::new();
@@ -33,7 +35,6 @@ pub extern fn kmain() {
 
 
 #[no_mangle]
-pub extern fn isr_handler(registers: idt::Registers)
-{
-   idt::handle(registers);
+pub extern fn isr_handler(registers: idt::Registers) {
+    idt::handle(registers);
 }

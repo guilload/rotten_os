@@ -13,4 +13,8 @@ pub mod port {
             asm!("outb %al, %dx" :: "{dx}" (port), "{al}" (value) :: "volatile");
         }
     }
+
+    pub fn wait() {
+        write(0x80, 0);
+    }
 }
