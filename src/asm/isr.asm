@@ -1,5 +1,5 @@
 %macro ISR_NOERRCODE 1          ; define a macro, taking one parameter
-    global isr%1]               ; %1 accesses the first parameter.
+    global isr%1                ; %1 accesses the first parameter.
     isr%1:
         cli                     ; disable interrupts
         push 0                  ; push a dummy error code
