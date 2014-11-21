@@ -42,4 +42,4 @@ debug: $(BUILDDIR)/rottenOS.bin
 	$(QEMU) -s -S -kernel $<
 
 run: $(BUILDDIR)/rottenOS.bin
-	$(QEMU) -kernel $<
+	$(QEMU) -d int -D /tmp/qemu.log -kernel $<
