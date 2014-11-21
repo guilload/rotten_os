@@ -125,6 +125,15 @@ impl VGA {
             }
     }
 
+    pub fn puti(&mut self, integer: uint) {  // FIXME
+        let mut integer = integer;
+
+        while integer % 10 != 0 {
+            self.putc((integer % 10) as u8 + '0' as u8);
+            integer = integer / 10;
+        }
+    }
+
     pub fn putc(&mut self, character: u8) {
 
         if character == BACKSPACE {
