@@ -133,6 +133,7 @@ pub fn handle(registers: Registers) {
 
 #[repr(C)]
 pub struct Registers {
+    ds: u32,
     edi: u32,
     esi: u32,
     ebp: u32,
@@ -141,15 +142,11 @@ pub struct Registers {
     edx: u32,
     ecx: u32,
     eax: u32,
-    gs: u32,
-    fs: u32,
-    es: u32,
-    ds: u32,
-    interrupt: u32,
+    pub interrupt: u32,
     error: u32,
     eip: u32,
     cs: u32,
     eflags: u32,
     useresp: u32,
-    ss: u32
+    ss: u32,
 }
