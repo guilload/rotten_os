@@ -101,15 +101,24 @@ fn register_handler(no: uint, func: ISRHandler) {
     }
 }
 
-
 fn default_handler(registers: Registers) {
     let mut vga = vga::VGA::new();
     vga.clear();
-    vga.puts("Unhandled interrupt!");
+    vga.puts("Unhandled interrupt: ");
+    vga.puti(registers.interrupt as uint);
+    vga.puts(", error: ");
+    vga.puti(registers.error as uint);
 }
 
 pub fn handle(registers: Registers) {
     let isr = registers.interrupt;
+
+    let mut vga = vga::VGA::new();
+    vga.clear();
+    vga.puts("Handling interrupt: ");
+    vga.puti(registers.interrupt as uint);
+    vga.puts(", error: ");
+    vga.puti(registers.error as uint);
 
     if isr > 255 {
         return

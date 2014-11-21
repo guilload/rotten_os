@@ -10,6 +10,7 @@ extern crate core;
 mod gdt;
 mod idt;
 mod io;
+mod keyboard;
 mod pic;
 mod vga;
 
@@ -23,6 +24,7 @@ pub extern fn kmain() {
     gdt::init();
     pic::init();
     idt::init();
+    keyboard::init();
 
     let mut vga = vga::VGA::new();
     vga.clear();
