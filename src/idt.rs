@@ -20,7 +20,7 @@ const IDT_: u8 = IDT_PRESENT | IDT_ALWAYS14;
 const INTERRUPT_GATE: u8 = 0xE;
 
 type IDTTable = [IDTDescriptor, ..IDT_SIZE];
-type ISRHandler = fn(registers: Registers);
+pub type ISRHandler = fn(registers: Registers);
 
 
 static mut ISR_HANDLERS: [ISRHandler, ..IDT_SIZE] = [default_handler, ..IDT_SIZE];
@@ -94,7 +94,7 @@ pub fn init() {
     IDT::new().load();
 }
 
-fn register_handler(no: uint, func: ISRHandler) {
+pub fn register_handler(no: uint, func: ISRHandler) {
     unsafe {
         IDT_TABLE[no] = IDTDescriptor::new(isr_handlers[no], 0x08, 0x8E);
         ISR_HANDLERS[no] = func;
