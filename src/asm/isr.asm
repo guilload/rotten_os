@@ -34,7 +34,7 @@ ISR_ERRCODE 14
 %assign i 15
 %rep 256 - 15
     ISR_NOERRCODE i
-%assign i i+1
+%assign i i + 1
 %endrep
 
 
@@ -49,7 +49,7 @@ isr_handlers:
 %assign i 0
 %rep 256
     ISR_HANDLER_ENTRY i
-%assign i i+1
+%assign i i + 1
 %endrep
 
 
