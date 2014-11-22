@@ -18,6 +18,15 @@ mod vga;
 #[lang = "eh_personality"] extern fn eh_personality() {}
 #[lang = "panic_fmt"] fn panic_fmt() -> ! { loop {} }
 
+fn idle() {
+    loop {
+        unsafe {
+            asm!("hlt");
+        }
+    }
+}
+
+
 #[no_mangle]
 pub extern fn kmain() {
     gdt::init();
@@ -31,6 +40,7 @@ pub extern fn kmain() {
     unsafe {
         asm!("int $$0x03");
     }
+    idle();
 }
 
 

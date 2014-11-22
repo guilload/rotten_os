@@ -33,6 +33,7 @@ stack_top:
 section .text
 global start
 start:
+    cli
     ; Welcome to kernel mode! We now have sufficient code for the bootloader to
     ; load and run our operating system. It doesn't do anything interesting yet.
     ; Perhaps we would like to call printf("Hello, World\n"). You should now
@@ -66,12 +67,3 @@ start:
     ; we'll create a C entry point called kmain and call it here.
     extern kmain
     call kmain
-
-    ; In case the function returns, we'll want to put the computer into an
-    ; infinite loop. To do that, we use the clear interrupt ('cli') instruction
-    ; to disable interrupts, the halt instruction ('hlt') to stop the CPU until
-    ; the next interrupt arrives, and jumping to the halt instruction if it ever
-    ; continues execution, just to be safe.
-    cli
-    hlt
-    jmp $
