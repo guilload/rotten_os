@@ -1,132 +1,38 @@
 use core::mem::size_of;
 use core::prelude::*;
 
-use io;
+
+use irq;
 use vga;
-
-
-extern {
-    fn idt_load(pointer: *const IDT);
-    static isr_handlers: [u32, ..IDT_SIZE];
-}
 
 
 const IDT_SIZE: uint = 256;
 
-const IDT_ALWAYS14: u8 = 14;
-const IDT_PRESENT: u8 = 1 << 7;
-const IDT_: u8 = IDT_PRESENT | IDT_ALWAYS14;
-
-const INTERRUPT_GATE: u8 = 0xE;
-
-type IDTTable = [IDTDescriptor, ..IDT_SIZE];
-pub type ISRHandler = fn(registers: Registers);
-
-
-static mut ISR_HANDLERS: [ISRHandler, ..IDT_SIZE] = [default_handler, ..IDT_SIZE];
-
-static mut IDT_TABLE: IDTTable = [
-    IDTDescriptor {
-        base_lo: 0,
-        sel: 0,
-        always0: 0,
-        flags: 0,
-        base_hi: 0,
-    }, ..IDT_SIZE
-];
+extern {
+    fn idt_load(pointer: *const IDT);
+    static interrupt_handlers: [u32, ..IDT_SIZE];
+}
 
 
 #[repr(packed)]
 struct IDTDescriptor {
     base_lo: u16,  // the lower 16 bits of the address to jump to when this interrupt fires
-    sel: u16,  // kernel segment selector
-    always0: u8,  // this must always be zero
+    selector: u16,  // kernel segment selector
+    zero: u8,  // this must always be zero
     flags: u8,  // more flags, see documentation
     base_hi: u16,  // the upper 16 bits of the address to jump to
 }
 
 impl IDTDescriptor {
 
-    pub fn new(base: u32, sel: u16, flags: u8) -> IDTDescriptor {
+    pub fn new(base: u32, selector: u16, flags: u8) -> IDTDescriptor {
         IDTDescriptor {
             base_lo: (base & 0xFFFF) as u16,
-            base_hi: (base >> 16 & 0xFFFF) as u16,
-            sel: sel,
-            always0: 0u8,
+            selector: selector,
+            zero: 0,
             flags: flags,
+            base_hi: (base >> 16 & 0xFFFF) as u16,
         }
-    }
-}
-
-
-#[repr(packed)]
-struct IDT {
-    limit: u16,
-    base: *const IDTTable,
-}
-
-impl IDT {
-
-    pub fn new() -> IDT {
-
-        unsafe {
-
-            for i in range(0, isr_handlers.len()) {
-                IDT_TABLE[i] = IDTDescriptor::new(isr_handlers[i], 0x08, 0x8E);
-            }
-
-            IDT {
-                limit: (size_of::<IDTDescriptor>() * IDT_TABLE.len() - 1) as u16,
-                base: &IDT_TABLE as *const IDTTable,
-            }
-        }
-    }
-
-    pub fn load(&self) {
-        unsafe {
-            idt_load(self as *const IDT);
-        }
-    }
-}
-
-
-pub fn init() {
-    IDT::new().load();
-}
-
-pub fn register_handler(no: uint, func: ISRHandler) {
-    unsafe {
-        IDT_TABLE[no] = IDTDescriptor::new(isr_handlers[no], 0x08, 0x8E);
-        ISR_HANDLERS[no] = func;
-    }
-}
-
-
-fn default_handler(registers: Registers) {
-    let mut vga = vga::VGA::new();
-    vga.clear();
-    vga.puts("Unhandled interrupt!");
-}
-
-pub fn handle(registers: Registers) {
-    let isr = registers.interrupt;
-
-    if isr > 255 {
-        return
-    }
-
-    if 31 < isr && isr < 48 {  // IRQ
-        let irq = isr - 32;
-
-        if irq < 8 {
-            io::port::write(0x20, 0x20);  // master
-        }
-
-        io::port::write(0xA0, 0x20);  // slave
-    }
-
-    unsafe {
-        ISR_HANDLERS[isr as uint](registers);
     }
 }
 
@@ -149,4 +55,96 @@ pub struct Registers {
     eflags: u32,
     useresp: u32,
     ss: u32,
+}
+
+pub type InterruptHandler = fn(registers: Registers);
+
+fn dummy_handler(registers: Registers) {
+    let mut vga = vga::VGA::new();
+    vga.clear();
+    vga.puts("Unhandled interrupt: ");
+    vga.puti(registers.interrupt as uint);
+    vga.puts(", error: ");
+    vga.puti(registers.error as uint);
+}
+
+static mut INTERRUPT_HANDLERS: [InterruptHandler, ..IDT_SIZE] = [dummy_handler, ..IDT_SIZE];
+
+
+type IDTable = [IDTDescriptor, ..IDT_SIZE];
+
+static mut IDTABLE: IDTable = [
+    IDTDescriptor {
+        base_lo: 0,
+        selector: 0,
+        zero: 0,
+        flags: 0,
+        base_hi: 0,
+    }, ..IDT_SIZE
+];
+
+
+#[repr(packed)]
+struct IDT {
+    limit: u16,
+    base: *const IDTable,
+}
+
+impl IDT {
+
+    fn new() -> IDT {
+        unsafe {
+
+            for i in range(0, interrupt_handlers.len()) {
+                IDTABLE[i] = IDTDescriptor::new(interrupt_handlers[i] as u32, 0x08, 0x8E);
+            }
+
+            IDT {
+                limit: (size_of::<IDTDescriptor>() * IDTABLE.len() - 1) as u16,
+                base: &IDTABLE as *const IDTable,
+            }
+        }
+    }
+
+    fn load(&self) {
+        unsafe {
+            idt_load(self as *const IDT);
+        }
+    }
+}
+
+
+pub fn init() {
+    let idt = IDT::new();
+    idt.load();
+    enable();
+}
+
+fn enable() {
+    unsafe {
+        asm!("sti");
+    }
+}
+
+pub fn handle(registers: Registers) {
+    let interrupt: uint = registers.interrupt as uint;
+
+    if interrupt > 255 {
+        return
+    }
+
+    if interrupt >= 32 && interrupt <= 47 {
+        irq::eoi(interrupt - 32);
+    }
+
+    unsafe {
+        INTERRUPT_HANDLERS[interrupt](registers);
+    }
+}
+
+pub fn register(number: uint, handler: InterruptHandler) {
+    unsafe {
+        IDTABLE[number] = IDTDescriptor::new(interrupt_handlers[number], 0x08, 0x8E);
+        INTERRUPT_HANDLERS[number] = handler;
+    }
 }

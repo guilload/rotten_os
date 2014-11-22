@@ -7,22 +7,6 @@ extern {
 }
 
 
-const GDT_SIZE: uint = 5;
-
-type GDTTable = [GDTDescriptor, ..GDT_SIZE];
-
-static mut GDT_TABLE: GDTTable = [
-    GDTDescriptor {
-        limit_low: 0,
-        base_low: 0,
-        base_middle: 0,
-        access: 0,
-        granularity: 0,
-        base_high: 0
-    }, ..GDT_SIZE
-];
-
-
 #[repr(packed)]
 struct GDTDescriptor {
     limit_low: u16,  // the lower 16 bits of the limit
@@ -35,7 +19,7 @@ struct GDTDescriptor {
 
 impl GDTDescriptor {
 
-    pub fn new(base: u32, limit: uint, access: u8, granularity: u8) -> GDTDescriptor {
+    fn new(base: u32, limit: uint, access: u8, granularity: u8) -> GDTDescriptor {
         GDTDescriptor {
             limit_low: (limit & 0xFFFF) as u16,
             base_low: (base & 0xFFFF) as u16,
@@ -46,46 +30,64 @@ impl GDTDescriptor {
         }
     }
 
-    pub fn flat(access: u8, granularity: u8) -> GDTDescriptor {
+    fn flat(access: u8, granularity: u8) -> GDTDescriptor {
         GDTDescriptor::new(0, 0xFFFFFFFF, access, granularity)
     }
 
-    pub fn null() -> GDTDescriptor {
+    fn null() -> GDTDescriptor {
         GDTDescriptor::new(0, 0, 0, 0)
     }
 }
 
 
+const GDT_SIZE: uint = 5;
+
+type GDTable = [GDTDescriptor, ..GDT_SIZE];
+
+static mut GDTABLE: GDTable = [
+    GDTDescriptor {
+        limit_low: 0,
+        base_low: 0,
+        base_middle: 0,
+        access: 0,
+        granularity: 0,
+        base_high: 0,
+    }, ..GDT_SIZE
+];
+
+
 #[repr(packed)]
 struct GDT {
     limit: u16,
-    base: *const GDTTable,
+    base: *const GDTable,
 }
 
 impl GDT {
 
-    pub fn new() -> GDT {
-
+    fn new() -> GDT {
         unsafe {
-            GDT_TABLE = [GDTDescriptor::null(),  // null segment
-                         GDTDescriptor::flat(0x9A, 0xCF),  // code segment
-                         GDTDescriptor::flat(0x92, 0xCF),  // data segment
-                         GDTDescriptor::flat(0xFA, 0xCF),  // user mode code segment
-                         GDTDescriptor::flat(0xF2, 0xCF)];  // user mode data segment
+            GDTABLE = [
+                GDTDescriptor::null(),  // null segment
+                GDTDescriptor::flat(0x9A, 0xCF),  // code segment
+                GDTDescriptor::flat(0x92, 0xCF),  // data segment
+                GDTDescriptor::flat(0xFA, 0xCF),  // user mode code segment
+                GDTDescriptor::flat(0xF2, 0xCF),  // user mode data segment
+            ];
 
             GDT {
-                limit: (size_of::<GDTDescriptor>() * GDT_TABLE.len() - 1) as u16,
-                base: &GDT_TABLE as *const GDTTable,
+                limit: (size_of::<GDTDescriptor>() * GDTABLE.len() - 1) as u16,
+                base: &GDTABLE as *const GDTable,
             }
         }
     }
 
-    pub fn load(&self) {
+    fn load(&self) {
         unsafe {
             gdt_load(self as *const GDT);
         }
     }
 }
+
 
 pub fn init() {
     GDT::new().load();

@@ -10,8 +10,11 @@ extern crate core;
 mod gdt;
 mod idt;
 mod io;
+mod irq;
 mod pic;
 mod vga;
+
+
 
 
 #[lang = "stack_exhausted"] extern fn stack_exhausted() {}
@@ -37,14 +40,11 @@ pub extern fn kmain() {
     vga.clear();
     vga.puts("Hello, world!");
 
-    unsafe {
-        asm!("int $$0x03");
-    }
     idle();
 }
 
 
 #[no_mangle]
-pub extern fn isr_handler(registers: idt::Registers) {
+pub extern fn handle_interrupt(registers: idt::Registers) {
     idt::handle(registers);
 }
