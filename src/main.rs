@@ -12,6 +12,7 @@ mod idt;
 mod io;
 mod irq;
 mod pic;
+mod timer;
 mod vga;
 
 
@@ -35,6 +36,8 @@ pub extern fn kmain() {
     gdt::init();
     pic::init();
     idt::init();
+
+    timer::init();
 
     let mut vga = vga::VGA::new();
     vga.clear();
