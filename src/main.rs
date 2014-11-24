@@ -7,6 +7,7 @@
 
 extern crate core;
 
+mod cpu;
 mod gdt;
 mod idt;
 mod io;
@@ -15,15 +16,6 @@ mod keyboard;
 mod pic;
 mod timer;
 mod vga;
-
-
-fn idle() {
-    loop {
-        unsafe {
-            asm!("hlt");
-        }
-    }
-}
 
 
 #[no_mangle]
@@ -38,7 +30,7 @@ pub extern fn kmain() {
     vga::clear();
     vga::puts("Hello, world!\n");
 
-    idle();
+    cpu::idle();
 }
 
 
