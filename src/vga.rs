@@ -33,26 +33,33 @@ enum Color {
     White = 15,
 }
 
-struct Cursor {
+
+static mut VGA: VGA = VGA { height: VGA_HEIGHT, width: VGA_WIDTH, x: 0, y: 0 };
+
+struct VGA {
     height: u16,
     width: u16,
     x: u16,
     y: u16,
 }
 
-impl Cursor {
+impl VGA {
 
-    pub fn new() -> Cursor {
-        Cursor {height: VGA_HEIGHT, width: VGA_WIDTH, x: 0, y: 0}
+    fn new() -> VGA {
+        VGA {height: VGA_HEIGHT, width: VGA_WIDTH, x: 0, y: 0}
     }
 
-    pub fn back(&mut self) {
+    fn back(&mut self) {
+
         if self.x > 0 {
             self.x -= 1;
+
+            let offset = self.offset();
+            self.put(offset, Black as u16, White as u16, WHITESPACE);
         }
     }
 
-    pub fn forward(&mut self) {
+    fn forward(&mut self) {
         self.x += 1;
 
         if self.x >= self.width {
@@ -60,20 +67,20 @@ impl Cursor {
         }
     }
 
-    pub fn cr(&mut self) {
+    fn cr(&mut self) {
         self.x = 0;
     }
 
-    pub fn newline(&mut self) {
+    fn newline(&mut self) {
         self.x = 0;
         self.y += 1;
     }
 
-    pub fn offset(&self) -> u16 {
+    fn offset(&self) -> u16 {
         self.y * self.width + self.x
     }
 
-    pub fn reset(&mut self) {
+    fn reset(&mut self) {
         self.x = 0;
         self.y = 0;
         self.mov();
@@ -81,11 +88,11 @@ impl Cursor {
 
     // handle a tab by increasing the cursor's X, but only to a point
     // where it is divisible by 8
-    pub fn tab(&mut self) {
+    fn tab(&mut self) {
         self.x = (self.x + 8) & !(8 - 1);
     }
 
-    pub fn mov(&mut self) {
+    fn mov(&mut self) {
         let offset = self.offset() as u8;
 
         io::port::write(0x3D4, 14);  // tell the VGA board we are setting the high cursor byte
@@ -93,18 +100,8 @@ impl Cursor {
         io::port::write(0x3D4, 15);  // tell the VGA board we are setting the low cursor byte
         io::port::write(0x3D5, offset);
     }
-}
 
-pub struct VGA {
-    cursor: Cursor
-}
-
-impl VGA {
-    pub fn new() -> VGA {
-        VGA {cursor: Cursor::new()}
-    }
-
-    pub fn clear (&mut self) {
+    fn clear (&mut self) {
         let mut x: u16 = 0;
 
         loop {
@@ -117,7 +114,7 @@ impl VGA {
         }
     }
 
-    pub fn put(&mut self, offset: u16, background: u16, foreground: u16, character: u8) {
+    fn put(&mut self, offset: u16, background: u16, foreground: u16, character: u8) {
         let pixel: u16 = (background << 12) | (foreground << 8) | character as u16;
 
         unsafe {
@@ -125,7 +122,7 @@ impl VGA {
             }
     }
 
-    pub fn puti(&mut self, integer: uint) {  // FIXME
+    fn puti(&mut self, integer: uint) {  // FIXME
         let mut integer = integer;
 
         loop {
@@ -138,37 +135,62 @@ impl VGA {
         }
     }
 
-    pub fn putc(&mut self, character: u8) {
+    fn putc(&mut self, character: u8) {
 
         if character == BACKSPACE {
-            self.cursor.back();
+            self.back();
         }
 
         else if character == TAB {
-            self.cursor.tab();
+            self.tab();
         }
 
         else if character == NEWLINE {
-            self.cursor.newline();
+            self.newline();
         }
 
         else if character == CR {
-            self.cursor.cr();
+            self.cr();
         }
 
         else if character >= WHITESPACE {
-            let offset = self.cursor.offset();
+            let offset = self.offset();
             self.put(offset, Black as u16, White as u16, character);
-            self.cursor.forward();
+            self.forward();
         }
 
-        self.cursor.mov();
+        self.mov();
    }
 
-    pub fn puts(&mut self, string: &str) {
+    fn puts(&mut self, string: &str) {
         for character in string.bytes() {
             self.putc(character);
         }
 
+    }
+}
+
+
+pub fn clear() {
+    unsafe {
+        VGA.clear();
+    }
+}
+
+pub fn puti(integer: uint) {
+    unsafe {
+        VGA.puti(integer);
+    }
+}
+
+pub fn putc(character: u8) {
+    unsafe {
+        VGA.putc(character);
+    }
+}
+
+pub fn puts(string: &str) {
+    unsafe {
+        VGA.puts(string);
     }
 }

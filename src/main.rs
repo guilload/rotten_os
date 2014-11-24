@@ -35,9 +35,8 @@ pub extern fn kmain() {
     keyboard::init();
     timer::init();
 
-    let mut vga = vga::VGA::new();
-    vga.clear();
-    vga.puts("Hello, world!");
+    vga::clear();
+    vga::puts("Hello, world!\n");
 
     idle();
 }

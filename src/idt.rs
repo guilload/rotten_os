@@ -60,12 +60,11 @@ pub struct Registers {
 pub type InterruptHandler = fn(registers: Registers);
 
 fn dummy_handler(registers: Registers) {
-    let mut vga = vga::VGA::new();
-    vga.clear();
-    vga.puts("Unhandled interrupt: ");
-    vga.puti(registers.interrupt as uint);
-    vga.puts(", error: ");
-    vga.puti(registers.error as uint);
+    vga::clear();
+    vga::puts("Unhandled interrupt: ");
+    vga::puti(registers.interrupt as uint);
+    vga::puts(", error: ");
+    vga::puti(registers.error as uint);
 }
 
 static mut INTERRUPT_HANDLERS: [InterruptHandler, ..IDT_SIZE] = [dummy_handler, ..IDT_SIZE];
