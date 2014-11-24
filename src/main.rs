@@ -17,12 +17,6 @@ mod timer;
 mod vga;
 
 
-
-
-#[lang = "stack_exhausted"] extern fn stack_exhausted() {}
-#[lang = "eh_personality"] extern fn eh_personality() {}
-#[lang = "panic_fmt"] fn panic_fmt() -> ! { loop {} }
-
 fn idle() {
     loop {
         unsafe {
@@ -52,4 +46,10 @@ pub extern fn kmain() {
 #[no_mangle]
 pub extern fn handle_interrupt(registers: idt::Registers) {
     idt::handle(registers);
+}
+
+#[lang = "panic_fmt"]
+pub extern fn rust_begin_unwind() -> ! {
+    loop {
+    }
 }

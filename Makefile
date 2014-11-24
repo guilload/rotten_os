@@ -3,9 +3,12 @@ NASM = nasm
 QEMU = qemu-system-i386 -curses
 
 RUSTC = rustc
-RUSTCLIB = $(HOME)/lib/rust/i686-unknown-linux-gnu/
+RUSTCLIB = $(HOME)/lib/rust/i686-unknown-linux-gnu
 RUSTCFLAGS := -O -L $(RUSTCLIB) --crate-type lib
 RUSTCTARGET = i686-unknown-linux-gnu
+
+LIBCORE = $(RUSTCLIB)/core.o
+RLIBC = $(RUSTCLIB)/rlibc.o
 
 SRCDIR = $(shell pwd)
 BUILDDIR = $(SRCDIR)/build
@@ -32,7 +35,7 @@ $(BUILDDIR)/%.asm.o: src/asm/%.asm
 $(BUILDDIR)/rottenOS.o: src/main.rs
 	$(RUSTC) $(RUSTCFLAGS) --target $(RUSTCTARGET) -o $@ --emit obj $<
 
-$(BUILDDIR)/rottenOS.bin: src/linker.ld $(OBJECTS)
+$(BUILDDIR)/rottenOS.bin: src/linker.ld $(OBJECTS) $(LIBCORE) $(RLIBC)
 	$(LD) -m elf_i386 -o $@ -T $^
 
 clean:
