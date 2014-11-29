@@ -46,9 +46,9 @@ ISR_ERRCODE 14
 %endrep
 
 
-global interrupt_handlers
+global idt_interrupt_handlers
 
-interrupt_handlers:
+idt_interrupt_handlers:
 
 %macro ISR_HANDLER_ENTRY 1
     dd isr%1

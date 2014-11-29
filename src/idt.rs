@@ -10,7 +10,7 @@ const IDT_SIZE: uint = 256;
 
 extern {
     fn idt_load(pointer: *const IDT);
-    static interrupt_handlers: [u32, ..IDT_SIZE];
+    static idt_interrupt_handlers: [u32, ..IDT_SIZE];
 }
 
 
@@ -94,8 +94,8 @@ impl IDT {
     fn new() -> IDT {
         unsafe {
 
-            for i in range(0, interrupt_handlers.len()) {
-                IDTABLE[i] = IDTDescriptor::new(interrupt_handlers[i] as u32, 0x08, 0x8E);
+            for i in range(0, idt_interrupt_handlers.len()) {
+                IDTABLE[i] = IDTDescriptor::new(idt_interrupt_handlers[i] as u32, 0x08, 0x8E);
             }
 
             IDT {
@@ -143,7 +143,7 @@ pub fn handle(registers: Registers) {
 
 pub fn register(number: uint, handler: InterruptHandler) {
     unsafe {
-        IDTABLE[number] = IDTDescriptor::new(interrupt_handlers[number], 0x08, 0x8E);
+        IDTABLE[number] = IDTDescriptor::new(idt_interrupt_handlers[number], 0x08, 0x8E);
         INTERRUPT_HANDLERS[number] = handler;
     }
 }
