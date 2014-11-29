@@ -13,6 +13,7 @@ mod idt;
 mod io;
 mod irq;
 mod keyboard;
+mod memory;
 mod pic;
 mod timer;
 mod vga;
@@ -26,9 +27,14 @@ pub extern fn kmain() {
 
     keyboard::init();
     timer::init();
+    memory::paging::init();
 
     vga::clear();
     vga::puts("Hello, world!\n");
+
+    // unsafe {
+    //     *(0x1000 as *mut u32) = 0;
+    // }
 
     cpu::idle();
 }
@@ -42,5 +48,6 @@ pub extern fn handle_interrupt(registers: idt::Registers) {
 #[lang = "panic_fmt"]
 pub extern fn rust_begin_unwind() -> ! {
     loop {
+
     }
 }
