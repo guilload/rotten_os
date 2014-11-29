@@ -27,12 +27,12 @@ stack_bottom:
 times 16384 db 0
 stack_top:
 
-; The linker script specifies start as the entry point to the kernel and the
+; The linker script specifies kstart as the entry point to the kernel and the
 ; bootloader will jump to this position once the kernel has been loaded. It
 ; doesn't make sense to return from this function as the bootloader is gone.
 section .text
-global start
-start:
+global kstart
+kstart:
     cli
     ; Welcome to kernel mode! We now have sufficient code for the bootloader to
     ; load and run our operating system. It doesn't do anything interesting yet.

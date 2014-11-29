@@ -1,6 +1,6 @@
 /* The bootloader will look at this image and start execution at the symbol
    designated as the entry point. */
-ENTRY(start)
+ENTRY(kstart)
 OUTPUT_ARCH(i386)
 OUTPUT_FORMAT("elf32-i386")
 
