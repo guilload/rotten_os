@@ -13,6 +13,7 @@ mod idt;
 mod io;
 mod irq;
 mod keyboard;
+mod memory;
 mod pic;
 mod timer;
 mod vga;
@@ -26,6 +27,7 @@ pub extern fn kmain() {
 
     keyboard::init();
     timer::init();
+    memory::paging::init();
 
     vga::clear();
     vga::puts("Hello, world!\n");
