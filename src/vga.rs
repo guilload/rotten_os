@@ -1,4 +1,4 @@
-use core::str::StrPrelude;
+use core::prelude::*;
 
 use io;
 
@@ -162,6 +162,22 @@ impl VGA {
         self.mov();
    }
 
+    fn puth(&mut self, integer: uint) {
+        self.puts("0x");
+
+        let mut nibbles = 1u;
+
+        while (integer >> nibbles * 4) > 0 {
+                nibbles += 1
+        }
+
+        for i in range(0, nibbles) {
+            let nibble = ((integer >> (nibbles - i - 1) * 4) & 0xF) as u8;
+            let character = if nibble < 10 { '0' as u8 + nibble } else { 'a' as u8 + nibble - 10 };
+            self.putc(character);
+        }
+    }
+
     fn puts(&mut self, string: &str) {
         for character in string.bytes() {
             self.putc(character);
@@ -174,6 +190,12 @@ impl VGA {
 pub fn clear() {
     unsafe {
         VGA.clear();
+    }
+}
+
+pub fn puth(integer: uint) {
+    unsafe {
+        VGA.puth(integer);
     }
 }
 
