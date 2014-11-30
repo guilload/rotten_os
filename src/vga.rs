@@ -122,19 +122,6 @@ impl VGA {
             }
     }
 
-    fn puti(&mut self, integer: uint) {  // FIXME
-        let mut integer = integer;
-
-        loop {
-            self.putc((integer % 10) as u8 + '0' as u8);
-            integer = integer / 10;
-
-            if integer == 0 {
-                break;
-            }
-        }
-    }
-
     fn putc(&mut self, character: u8) {
 
         if character == BACKSPACE {
@@ -160,7 +147,29 @@ impl VGA {
         }
 
         self.mov();
-   }
+    }
+
+    fn puti(&mut self, integer: uint) {
+        if integer == 0 {
+            self.puts("0");
+        }
+        else {
+            let mut integer = integer;
+            let mut reversed = 0u;
+
+            while integer > 0 {
+                reversed *= 10;
+                reversed += integer % 10;
+                integer /= 10;
+            }
+
+            while reversed > 0 {
+                let character = (reversed % 10) as u8 + '0' as u8;
+                self.putc(character);
+                reversed /= 10;
+            }
+        }
+    }
 
     fn puth(&mut self, integer: uint) {
         self.puts("0x");
