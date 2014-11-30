@@ -27,14 +27,16 @@ pub extern fn kmain() {
 
     keyboard::init();
     timer::init();
-    memory::paging::init();
+
+    memory::phys::init();
+    memory::virt::init();
 
     vga::clear();
     vga::puts("Hello, world!\n");
 
-    // unsafe {
-    //     *(0x1000 as *mut u32) = 0;
-    // }
+    unsafe {
+        *(0x1000 as *mut u32) = 0;
+    }
 
     cpu::idle();
 }
@@ -46,7 +48,8 @@ pub extern fn handle_interrupt(registers: idt::Registers) {
 }
 
 #[lang = "panic_fmt"]
-pub extern fn rust_begin_unwind() -> ! {
+pub extern fn rust_begin_unwind(msg: &::core::fmt::Arguments, file: &'static str, line: uint) -> ! {
+    // panic!("{} in {}:{}", args, file, line);
     loop {
 
     }

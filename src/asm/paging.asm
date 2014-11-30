@@ -1,20 +1,12 @@
-global pdirectory
-
-align 4096
-pdirectory resd 1024
-
-
-global ptable
-
-align 4096
-ptable resd 1024
-
-
 global paging_load
 
 paging_load:
-    mov eax, pdirectory
-    mov cr3, eax
+    push ebp
+    mov  ebp, esp
+    mov  eax, [esp+8]
+    mov  cr3, eax
+    mov  esp, ebp
+    pop  ebp
     ret
 
 
