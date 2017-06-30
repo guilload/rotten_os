@@ -155,7 +155,7 @@ impl VGA {
         }
         else {
             let mut integer = integer;
-            let mut reversed = 0u;
+            let mut reversed = 0;
 
             while integer > 0 {
                 reversed *= 10;
@@ -174,7 +174,7 @@ impl VGA {
     fn puth(&mut self, integer: uint) {
         self.puts("0x");
 
-        let mut nibbles = 1u;
+        let mut nibbles = 1;
 
         while (integer >> nibbles * 4) > 0 {
                 nibbles += 1
