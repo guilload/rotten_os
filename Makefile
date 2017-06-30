@@ -16,7 +16,7 @@ BUILDDIR = $(SRCDIR)/build
 ASMFILES = $(wildcard src/asm/*.asm)
 ASMOBJECTS = $(patsubst src/asm/%.asm,$(BUILDDIR)/%.asm.o,$(ASMFILES))
 
-OBJECTS = $(ASMOBJECTS) $(BUILDDIR)/rottenOS.o
+OBJECTS = $(ASMOBJECTS) $(BUILDDIR)/rotten_os.o
 
 
 .SUFFIXES: .asm .o .rs
@@ -24,7 +24,7 @@ OBJECTS = $(ASMOBJECTS) $(BUILDDIR)/rottenOS.o
 .PHONY: clean run
 
 
-all: clean $(BUILDDIR) $(BUILDDIR)/rottenOS.bin
+all: clean $(BUILDDIR) $(BUILDDIR)/rotten_os.bin
 
 $(BUILDDIR):
 	mkdir -p $(BUILDDIR)
@@ -32,17 +32,17 @@ $(BUILDDIR):
 $(BUILDDIR)/%.asm.o: src/asm/%.asm
 	$(NASM) -f elf32 -Wall -o $@ $<
 
-$(BUILDDIR)/rottenOS.o: src/main.rs
+$(BUILDDIR)/rotten_os.o: src/main.rs
 	$(RUSTC) $(RUSTCFLAGS) --target $(RUSTCTARGET) -o $@ --emit obj $<
 
-$(BUILDDIR)/rottenOS.bin: src/linker.ld $(OBJECTS) $(LIBCORE) $(RLIBC)
+$(BUILDDIR)/rotten_os.bin: src/linker.ld $(OBJECTS) $(LIBCORE) $(RLIBC)
 	$(LD) -m elf_i386 -o $@ -T $^
 
 clean:
 	rm -rf $(BUILDDIR)
 
-debug: $(BUILDDIR)/rottenOS.bin
+debug: $(BUILDDIR)/rotten_os.bin
 	$(QEMU) -s -S -kernel $<
 
-run: $(BUILDDIR)/rottenOS.bin
+run: $(BUILDDIR)/rotten_os.bin
 	$(QEMU) -d int -D /tmp/qemu.log -kernel $<
