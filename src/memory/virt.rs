@@ -16,7 +16,7 @@ const WRITE: uint = 1 << 1;
 const KERNEL: uint = 0;
 const USER: uint = 1 << 2;
 
-type Table = [u32, ..1024];
+type Table = [u32; 1024];
 
 
 extern {

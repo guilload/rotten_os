@@ -10,7 +10,7 @@ const IDT_SIZE: uint = 256;
 
 extern {
     fn idt_load(pointer: *const IDT);
-    static idt_interrupt_handlers: [u32, ..IDT_SIZE];
+    static idt_interrupt_handlers: [u32; IDT_SIZE];
 }
 
 
@@ -67,10 +67,10 @@ fn dummy_handler(registers: Registers) {
     vga::puti(registers.error as uint);
 }
 
-static mut INTERRUPT_HANDLERS: [InterruptHandler, ..IDT_SIZE] = [dummy_handler, ..IDT_SIZE];
+static mut INTERRUPT_HANDLERS: [InterruptHandler; IDT_SIZE] = [dummy_handler; IDT_SIZE];
 
 
-type IDTable = [IDTDescriptor, ..IDT_SIZE];
+type IDTable = [IDTDescriptor; IDT_SIZE];
 
 static mut IDTABLE: IDTable = [
     IDTDescriptor {
@@ -79,7 +79,7 @@ static mut IDTABLE: IDTable = [
         zero: 0,
         flags: 0,
         base_hi: 0,
-    }, ..IDT_SIZE
+    }; IDT_SIZE
 ];
 
 

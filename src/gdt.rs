@@ -42,7 +42,7 @@ impl GDTDescriptor {
 
 const GDT_SIZE: uint = 5;
 
-type GDTable = [GDTDescriptor, ..GDT_SIZE];
+type GDTable = [GDTDescriptor; GDT_SIZE];
 
 static mut GDTABLE: GDTable = [
     GDTDescriptor {
@@ -52,7 +52,7 @@ static mut GDTABLE: GDTable = [
         access: 0,
         granularity: 0,
         base_high: 0,
-    }, ..GDT_SIZE
+    }; GDT_SIZE
 ];
 
 
